@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Game Night Registration</title>
+  <style>
+    :root{
+      --bg:#071733; --card:rgba(255,255,255,.06); --border:rgba(255,255,255,.14);
+      --text:#eaf1ff; --muted:rgba(234,241,255,.78);
+      --ok:#68ffb3; --warn:#ffd36b; --bad:#ff6b6b;
+    }
+    body{margin:0;font-family:system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);}
+    .wrap{max-width:980px;margin:0 auto;padding:20px;}
+    .header{
+      border:1px solid var(--border); background:var(--card); border-radius:18px;
+      padding:16px 16px 14px; margin-bottom:14px;
+    }
+    h1{margin:0 0 6px;font-size:20px;}
+    h2{margin:0 0 10px;font-size:16px;}
+    .muted{color:var(--muted); font-size:13px; margin:0;}
+    .row{display:grid; grid-template-columns: 1fr; gap:14px;}
+    @media(min-width: 920px){ .row{grid-template-columns: 1.05fr .95fr;} }
+
+    .card{border:1px solid var(--border); background:var(--card); border-radius:18px; padding:16px;}
+    label{display:block;margin:10px 0 6px;font-weight:650;}
+    input, textarea, select{
+      width:100%; box-sizing:border-box; padding:10px 12px;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:12px; background:rgba(0,0,0,.20); color:var(--text);
+      font-size:15px;
+    }
+    textarea{min-height:90px; resize:vertical;}
+    button{
+      margin-top:12px; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.10); color:var(--text); cursor:pointer; font-weight:650;
+    }
+    button:hover{background:rgba(255,255,255,.14);}
+    .pill{
+      display:inline-block; padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.18); background:rgba(0,0,0,.15); font-size:12px;
+      margin-right:8px;
+    }
+    .status{margin-top:10px; font-weight:650;}
+    .status.ok{color:var(--ok);}
+    .status.warn{color:var(--warn);}
+    .status.bad{color:var(--bad);}
+    ul{margin:10px 0 0 18px; padding:0;}
+    li{margin:6px 0;}
+    .tiny{font-size:12px; color:var(--muted); margin-top:10px;}
+    .adminBadge{display:none;}
+    .adminOn .adminBadge{display:inline-block;}
+    .adminOnly{display:none;}
+    .adminOn .adminOnly{display:block;}
+    .danger{background:rgba(255,107,107,.10); border-color:rgba(255,107,107,.25);}
+
+    /* Game list */
+    .gameItem{
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.16);
+      border-radius:14px;
+      padding:12px;
+      margin-top:10px;
+    }
+    .gameTop{
+      display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start;
+    }
+    .gameTitle{font-weight:800; font-size:16px; margin:0;}
+    .gameMeta{margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.35;}
+    .voteBox{display:flex; align-items:center; gap:8px;}
+    .voteBtn{
+      margin:0;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.08);
+      cursor:pointer;
+      font-weight:800;
+    }
+    .voteBtn:hover{background:rgba(255,255,255,.12);}
+    .score{
+      min-width:48px;
+      text-align:center;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(0,0,0,.12);
+      font-weight:800;
+    }
+    .gameDesc{margin:10px 0 0; font-size:14px; color:rgba(234,241,255,.92);}
+    .grid2{display:grid; grid-template-columns: 1fr; gap:10px;}
+    @media(min-width:680px){ .grid2{grid-template-columns: 1fr 1fr;} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- HEADER 1: Event -->
+    <div id="topHeader" class="header">
+      <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+        <div>
+          <h1>
+            Game Night Registration
+            <span class="pill adminBadge">ADMIN</span>
+          </h1>
+          <p class="muted" id="eventLine">Loading event…</p>
+          <p class="muted" id="notesLine"></p>
+        </div>
+        <div>
+          <span class="pill" id="countPill">0 registered</span>
+          <span class="pill" id="datePill">—</span>
+        </div>
+      </div>
+
+      <div id="whoBlock" style="margin-top:10px;">
+        <p class="muted" style="margin:0 0 6px;">Registered:</p>
+        <div id="whoList" class="muted">—</div>
+      </div>
+
+      <div class="tiny">Participation optional, registration required.</div>
+    </div>
+
+    <!-- HEADER 2: Game suggestions + voting -->
+    <div id="gamesHeader" class="header">
+      <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+        <div>
+          <h1 style="margin-bottom:6px;">Board Game Suggestions & Voting</h1>
+          <p class="muted">
+            Suggest a game and vote for what we should play. (No login.)
+          </p>
+        </div>
+        <div>
+          <span class="pill" id="gameCountPill">0 suggestions</span>
+          <span class="pill" id="sortPill">sorted by score</span>
+        </div>
+      </div>
+
+      <div id="gameList"></div>
+
+      <div class="tiny">
+        Tip: keep suggestions short & helpful. Votes are stored per-device in this version.
+      </div>
+    </div>
+
+    <div class="row">
+
+      <!-- Participant registration -->
+      <div class="card">
+        <h2>Register</h2>
+        <form id="regForm">
+          <label for="name">Your name</label>
+          <input id="name" name="name" type="text" minlength="2" maxlength="60" placeholder="e.g., Audrius" required />
+          <button type="submit">Register for this date</button>
+        </form>
+        <div id="regStatus" class="status" aria-live="polite"></div>
+        <div class="tiny">You’re registering for the date shown above.</div>
+      </div>
+
+      <!-- Suggest a board game -->
+      <div class="card">
+        <h2>Suggest a Board Game</h2>
+        <form id="gameForm">
+          <label for="gTitle">Žaidimo pavadinimas</label>
+          <input id="gTitle" name="gTitle" type="text" minlength="2" maxlength="80" placeholder="Pvz., Codenames" required />
+
+          <div class="grid2">
+            <div>
+              <label for="gDifficulty">Sudėtingumas</label>
+              <select id="gDifficulty" name="gDifficulty" required>
+                <option value="">Pasirinkti…</option>
+                <option value="1">1 (lengvas)</option>
+                <option value="2">2 (vidutinis)</option>
+                <option value="3">3 (sunkesnis)</option>
+              </select>
+            </div>
+            <div>
+              <label for="gHost">Reikalingas vedėjas?</label>
+              <select id="gHost" name="gHost" required>
+                <option value="">Pasirinkti…</option>
+                <option value="no">Ne</option>
+                <option value="yes">Taip</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div>
+              <label for="gPlayers">Žaidėjų skaičius</label>
+              <input id="gPlayers" name="gPlayers" type="text" maxlength="20" placeholder="Pvz., 2–6" required />
+            </div>
+            <div>
+              <label for="gType">Žaidimo tipas</label>
+              <select id="gType" name="gType" required>
+                <option value="">Pasirinkti…</option>
+                <option value="coop">Co-op</option>
+                <option value="comp">Competitive</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="gDesc">Trumpas aprašymas</label>
+          <textarea id="gDesc" name="gDesc" maxlength="280" placeholder="1–2 sakiniai: kuo smagus, kiek trunka, ar lengva išmokti…" required></textarea>
+
+          <button type="submit">Pateikti pasiūlymą</button>
+        </form>
+        <div id="gameStatus" class="status" aria-live="polite"></div>
+        <div class="tiny">This will appear above with voting.</div>
+      </div>
+
+      <!-- Admin panel -->
+      <div class="card adminOnly" id="adminCard">
+        <h2>Admin: Create / Update Event</h2>
+        <form id="adminForm">
+          <label for="eventDate">Event date (YYYY-MM-DD)</label>
+          <input id="eventDate" name="eventDate" type="date" required />
+          <label for="eventNotes">Notes (optional)</label>
+          <textarea id="eventNotes" name="eventNotes" placeholder="e.g., Thursday, starts 17:00, bring game ideas…"></textarea>
+          <button type="submit">Save event</button>
+        </form>
+
+        <button class="danger" id="clearRegsBtn" type="button" title="Clears registrations for current event">
+          Clear registrations for this event
+        </button>
+
+        <button class="danger" id="clearGamesBtn" type="button" title="Clears game suggestions">
+          Clear all game suggestions (this device)
+        </button>
+
+        <div id="adminStatus" class="status" aria-live="polite"></div>
+        <div class="tiny">
+          Admin mode is enabled via URL hash: <code>#admin=YOUR_KEY</code>
+        </div>
+      </div>
+
+      <!-- Non-admin hint -->
+      <div class="card" id="nonAdminHint">
+        <h2>Organizer?</h2>
+        <p class="muted" style="margin:0;">
+          Admin tools are hidden. To enable admin mode, open the page with:
+          <br><code>#admin=YOUR_KEY</code>
+        </p>
+        <p class="tiny" style="margin:10px 0 0;">
+          (Replace YOUR_KEY with your secret key in the script.)
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+/**
+ * =========================
+ * CONFIG
+ * =========================
+ */
+const ADMIN_KEY = "CHANGE_ME_TO_A_SECRET";
+
+// Storage keys
+const STORAGE_EVENT = "sbep_event_v1"; // {date:"YYYY-MM-DD", notes:"..."}
+const STORAGE_REGS  = "sbep_regs_v1";  // map by date: { "2026-01-16": [{name, ts}, ...], ... }
+
+// Games + votes
+const STORAGE_GAMES = "sbep_games_v1"; // [{id, title, difficulty, host, players, type, desc, createdAt}]
+const STORAGE_VOTES = "sbep_votes_v1"; // { [gameId]: -1|0|1 } per device
+
+const $ = (id) => document.getElementById(id);
+
+function isAdmin() {
+  const hash = window.location.hash || "";
+  const m = hash.match(/admin=([^&]+)/);
+  if (!m) return false;
+  try { return decodeURIComponent(m[1]) === ADMIN_KEY; } catch { return false; }
+}
+
+function loadEvent() {
+  const raw = localStorage.getItem(STORAGE_EVENT);
+  if (raw) { try { return JSON.parse(raw); } catch {} }
+  return { date: "2026-01-16", notes: "" };
+}
+function saveEvent(evt) { localStorage.setItem(STORAGE_EVENT, JSON.stringify(evt)); }
+
+function loadRegsMap() {
+  const raw = localStorage.getItem(STORAGE_REGS);
+  if (raw) { try { return JSON.parse(raw); } catch {} }
+  return {};
+}
+function saveRegsMap(map) { localStorage.setItem(STORAGE_REGS, JSON.stringify(map)); }
+
+function sanitizeName(name) {
+  return String(name || "").trim().replace(/\s+/g, " ");
+}
+
+function getRegsForDate(date) {
+  const map = loadRegsMap();
+  return Array.isArray(map[date]) ? map[date] : [];
+}
+function setRegsForDate(date, regs) {
+  const map = loadRegsMap();
+  map[date] = regs;
+  saveRegsMap(map);
+}
+
+// ---------- Games ----------
+function loadGames() {
+  const raw = localStorage.getItem(STORAGE_GAMES);
+  if (raw) { try { return JSON.parse(raw); } catch {} }
+  return [];
+}
+function saveGames(games) {
+  localStorage.setItem(STORAGE_GAMES, JSON.stringify(games));
+}
+function loadVotes() {
+  const raw = localStorage.getItem(STORAGE_VOTES);
+  if (raw) { try { return JSON.parse(raw); } catch {} }
+  return {};
+}
+function saveVotes(votes) {
+  localStorage.setItem(STORAGE_VOTES, JSON.stringify(votes));
+}
+function uid() {
+  return (crypto?.randomUUID?.() || ("id-" + Math.random().toString(16).slice(2) + Date.now()));
+}
+function normalizeTitle(t) {
+  return String(t || "").trim().replace(/\s+/g, " ");
+}
+function scoreForGame(gameId) {
+  // In this no-backend version, "score" is computed from per-device votes only.
+  // (If you add backend later, this becomes global votes.)
+  const votes = loadVotes();
+  return votes[gameId] || 0;
+}
+function metaText(g) {
+  const diff = g.difficulty;
+  const host = (g.host === "yes") ? "vedėjas: taip" : "vedėjas: ne";
+  const type = (g.type === "coop") ? "co-op" : "competitive";
+  return `Sudėtingumas: ${diff} • ${host} • žaidėjai: ${g.players} • tipas: ${type}`;
+}
+
+function renderGames() {
+  const games = loadGames();
+  const votes = loadVotes();
+
+  // Sort by score desc, then newest
+  const sorted = [...games].sort((a,b) => {
+    const sa = (votes[a.id] || 0);
+    const sb = (votes[b.id] || 0);
+    if (sb !== sa) return sb - sa;
+    return (b.createdAt || "").localeCompare(a.createdAt || "");
+  });
+
+  $("gameCountPill").textContent = `${games.length} suggestions`;
+
+  if (sorted.length === 0) {
+    $("gameList").innerHTML = `<p class="muted" style="margin-top:10px;">No suggestions yet — add one below 🙂</p>`;
+    return;
+  }
+
+  $("gameList").innerHTML = sorted.map(g => {
+    const score = votes[g.id] || 0;
+    return `
+      <div class="gameItem">
+        <div class="gameTop">
+          <div style="min-width:240px; flex:1;">
+            <p class="gameTitle">${escapeHtml(g.title)}</p>
+            <p class="gameMeta">${escapeHtml(metaText(g))}</p>
+          </div>
+          <div class="voteBox" aria-label="Voting">
+            <button class="voteBtn" data-vote="-1" data-id="${g.id}" title="Downvote">−</button>
+            <div class="score" title="Score">${score}</div>
+            <button class="voteBtn" data-vote="1" data-id="${g.id}" title="Upvote">+</button>
+          </div>
+        </div>
+        <div class="gameDesc">${escapeHtml(g.desc)}</div>
+      </div>
+    `;
+  }).join("");
+
+  // Attach vote handlers
+  document.querySelectorAll(".voteBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id");
+      const v = Number(btn.getAttribute("data-vote")) || 0;
+
+      const votesNow = loadVotes();
+      const current = votesNow[id] || 0;
+
+      // Toggle behavior: clicking same vote again removes it
+      const next = (current === v) ? 0 : v;
+      votesNow[id] = next;
+      saveVotes(votesNow);
+      renderGames();
+    });
+  });
+}
+
+// Simple HTML escape
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+// ---------- Render all ----------
+function render() {
+  const admin = isAdmin();
+  document.body.classList.toggle("adminOn", admin);
+
+  $("adminCard").style.display = admin ? "block" : "none";
+  $("nonAdminHint").style.display = admin ? "none" : "block";
+
+  const evt = loadEvent();
+  const regs = getRegsForDate(evt.date);
+
+  $("eventLine").textContent = `Event date: ${evt.date}`;
+  $("datePill").textContent = evt.date;
+
+  const notes = (evt.notes || "").trim();
+  $("notesLine").textContent = notes ? `Info: ${notes}` : "";
+
+  $("countPill").textContent = `${regs.length} registered`;
+
+  if (regs.length === 0) {
+    $("whoList").textContent = "No one yet — be the first 🙂";
+  } else {
+    $("whoList").textContent = regs.map(r => r.name).join(", ");
+  }
+
+  if (admin) {
+    $("eventDate").value = evt.date;
+    $("eventNotes").value = evt.notes || "";
+  }
+
+  renderGames();
+}
+
+// ---------- Registration form ----------
+$("regForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const evt = loadEvent();
+  const name = sanitizeName($("name").value);
+
+  const status = $("regStatus");
+  status.textContent = "";
+  status.className = "status";
+
+  if (name.length < 2) {
+    status.textContent = "Please enter your name (min 2 characters).";
+    status.classList.add("warn");
+    return;
+  }
+
+  const regs = getRegsForDate(evt.date);
+
+  const exists = regs.some(r => r.name.toLowerCase() === name.toLowerCase());
+  if (exists) {
+    status.textContent = `You're already registered for ${evt.date}.`;
+    status.classList.add("warn");
+    return;
+  }
+
+  regs.push({ name, ts: new Date().toISOString() });
+  setRegsForDate(evt.date, regs);
+
+  status.textContent = `Thanks, ${name}! Registered for ${evt.date}.`;
+  status.classList.add("ok");
+
+  $("regForm").reset();
+  $("name").focus();
+  render();
+});
+
+// ---------- Game suggestion form ----------
+$("gameForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const status = $("gameStatus");
+  status.textContent = "";
+  status.className = "status";
+
+  const title = normalizeTitle($("gTitle").value);
+  const difficulty = $("gDifficulty").value;
+  const host = $("gHost").value;
+  const players = normalizeTitle($("gPlayers").value);
+  const type = $("gType").value;
+  const desc = normalizeTitle($("gDesc").value);
+
+  if (title.length < 2) {
+    status.textContent = "Įrašyk žaidimo pavadinimą.";
+    status.classList.add("warn");
+    return;
+  }
+  if (!difficulty || !host || !type) {
+    status.textContent = "Užpildyk sudėtingumą, vedėją ir tipą.";
+    status.classList.add("warn");
+    return;
+  }
+  if (players.length < 1) {
+    status.textContent = "Įrašyk žaidėjų skaičių (pvz., 2–6).";
+    status.classList.add("warn");
+    return;
+  }
+  if (desc.length < 3) {
+    status.textContent = "Trumpas aprašymas per trumpas.";
+    status.classList.add("warn");
+    return;
+  }
+
+  const games = loadGames();
+
+  // Prevent duplicate titles (case-insensitive)
+  const dup = games.some(g => g.title.toLowerCase() === title.toLowerCase());
+  if (dup) {
+    status.textContent = "Šis žaidimas jau pasiūlytas (pabandyk papildyti aprašymą kitame pasiūlyme).";
+    status.classList.add("warn");
+    return;
+  }
+
+  const game = {
+    id: uid(),
+    title,
+    difficulty: Number(difficulty),
+    host,
+    players,
+    type,
+    desc,
+    createdAt: new Date().toISOString()
+  };
+
+  games.push(game);
+  saveGames(games);
+
+  status.textContent = "Ačiū! Pasiūlymas pridėtas.";
+  status.classList.add("ok");
+
+  $("gameForm").reset();
+  $("gTitle").focus();
+  renderGames();
+});
+
+// ---------- Admin ----------
+$("adminForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const status = $("adminStatus");
+  status.textContent = "";
+  status.className = "status";
+
+  if (!isAdmin()) {
+    status.textContent = "Admin mode not enabled.";
+    status.classList.add("warn");
+    return;
+  }
+
+  const date = $("eventDate").value;
+  if (!date) {
+    status.textContent = "Please select an event date.";
+    status.classList.add("warn");
+    return;
+  }
+
+  const notes = ($("eventNotes").value || "").trim();
+  saveEvent({ date, notes });
+
+  status.textContent = `Saved event: ${date}`;
+  status.classList.add("ok");
+  render();
+});
+
+$("clearRegsBtn").addEventListener("click", () => {
+  const status = $("adminStatus");
+  status.textContent = "";
+  status.className = "status";
+
+  if (!isAdmin()) {
+    status.textContent = "Admin mode not enabled.";
+    status.classList.add("warn");
+    return;
+  }
+
+  const evt = loadEvent();
+  setRegsForDate(evt.date, []);
+
+  status.textContent = `Cleared registrations for ${evt.date}.`;
+  status.classList.add("ok");
+  render();
+});
+
+$("clearGamesBtn").addEventListener("click", () => {
+  const status = $("adminStatus");
+  status.textContent = "";
+  status.className = "status";
+
+  if (!isAdmin()) {
+    status.textContent = "Admin mode not enabled.";
+    status.classList.add("warn");
+    return;
+  }
+
+  localStorage.removeItem(STORAGE_GAMES);
+  localStorage.removeItem(STORAGE_VOTES);
+
+  status.textContent = "Cleared game suggestions + votes (this device).";
+  status.classList.add("ok");
+  renderGames();
+});
+
+// Re-render if hash changes (admin mode on/off)
+window.addEventListener("hashchange", render);
+
+// Initial render
+render();
+</script>
+</body>
+</html>
