@@ -1,58 +1,64 @@
-export async function onRequestGet({ request, env }) {
-  const url = new URL(request.url);
-  const date = url.searchParams.get("date") || "";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ error: "invalid_date" }, 400);
+import { json, badRequest, normalize, requireAdmin } from "./_util.js";
 
-  // Aggregate votes: sum(value)
-  const { results } = await env.DB.prepare(`
-    SELECT s.*,
-      COALESCE(SUM(v.value), 0) AS score
-    FROM suggestions s
-    LEFT JOIN votes v ON v.suggestion_id = s.id
-    WHERE s.date = ?
-    GROUP BY s.id
-    ORDER BY score DESC, s.created_at DESC
-  `).bind(date).all();
+export async function onRequestGet({ env }) {
+  const { results } = await env.DB.prepare(
+    "SELECT id, title, difficulty, host, players, game_type, description, score, created_at " +
+      "FROM suggestions ORDER BY score DESC, created_at DESC"
+  ).all();
 
-  return json({ date, suggestions: results });
+  // match your frontend naming (desc)
+  const rows = results.map((r) => ({
+    id: r.id,
+    title: r.title,
+    difficulty: r.difficulty,
+    host: r.host,
+    players: r.players,
+    type: r.game_type,
+    desc: r.description || "",
+    score: r.score,
+    createdAt: r.created_at,
+  }));
+
+  return json({ rows });
 }
 
 export async function onRequestPost({ request, env }) {
-  const b = await request.json().catch(() => ({}));
+  const body = await request.json().catch(() => ({}));
 
-  const date = (b.date || "").trim();
-  const title = (b.title || "").trim();
-  const difficulty = Number(b.difficulty);
-  const needsHost = b.needs_host ? 1 : 0;
-  const playersNoHost = (b.players_no_host || "").trim();
-  const gameType = (b.game_type || "").trim();
-  const description = (b.description || "").trim();
+  const id = String(body.id || "").trim();
+  const title = String(body.title || "").trim();
+  const difficulty = Number(body.difficulty);
+  const host = String(body.host || "").trim();
+  const players = String(body.players || "").trim();
+  const type = String(body.type || "").trim();
+  const desc = String(body.desc || "").trim();
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ error: "invalid_date" }, 400);
-  if (title.length < 2 || title.length > 80) return json({ error: "invalid_title" }, 400);
-  if (![1,2,3].includes(difficulty)) return json({ error: "invalid_difficulty" }, 400);
-  if (!playersNoHost || playersNoHost.length > 20) return json({ error: "invalid_players" }, 400);
-  if (!["coop","comp"].includes(gameType)) return json({ error: "invalid_type" }, 400);
-  if (description.length < 3 || description.length > 280) return json({ error: "invalid_description" }, 400);
+  if (!id) return badRequest("missing_id", 400);
+  if (title.length < 2) return badRequest("invalid_title", 400);
+  if (!Number.isFinite(difficulty)) return badRequest("invalid_difficulty", 400);
+  if (!host) return badRequest("invalid_host", 400);
+  if (!players) return badRequest("invalid_players", 400);
+  if (!type) return badRequest("invalid_type", 400);
 
-  // Optional: prevent duplicate title per date
-  const dup = await env.DB.prepare(
-    "SELECT 1 FROM suggestions WHERE date = ? AND lower(title) = lower(?) LIMIT 1"
-  ).bind(date, title).first();
+  const titleNorm = normalize(title);
 
-  if (dup) return json({ ok: true, duplicate: true });
+  try {
+    await env.DB.prepare(
+      "INSERT INTO suggestions (id, title, title_norm, difficulty, host, players, game_type, description) " +
+        "VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)"
+    )
+      .bind(id, title, titleNorm, difficulty, host, players, type, desc)
+      .run();
+  } catch {
+    return badRequest("game_exists", 409);
+  }
 
-  const res = await env.DB.prepare(`
-    INSERT INTO suggestions (date, title, difficulty, needs_host, players_no_host, game_type, description)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).bind(date, title, difficulty, needsHost, playersNoHost, gameType, description).run();
-
-  return json({ ok: true, id: res.meta.last_row_id });
+  return json({ ok: true });
 }
 
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8" }
-  });
+export async function onRequestDelete({ request, env }) {
+  if (!requireAdmin(request, env)) return badRequest("unauthorized", 401);
+
+  await env.DB.prepare("DELETE FROM suggestions").run();
+  return json({ ok: true });
 }
