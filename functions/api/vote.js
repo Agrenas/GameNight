@@ -1,27 +1,21 @@
+import { json, badRequest } from "./_util.js";
+
 export async function onRequestPost({ request, env }) {
-  const { viewer_id, suggestion_id, value } = await request.json().catch(() => ({}));
+  const body = await request.json().catch(() => ({}));
+  const id = String(body.id || "").trim();
+  const delta = Number(body.delta);
 
-  const vid = String(viewer_id || "").trim();
-  const sid = Number(suggestion_id);
-  const v = Number(value);
+  if (!id) return badRequest("missing_id", 400);
+  if (![1, -1].includes(delta)) return badRequest("invalid_delta", 400);
 
-  if (!vid || vid.length > 80) return json({ error: "invalid_viewer" }, 400);
-  if (!Number.isInteger(sid) || sid <= 0) return json({ error: "invalid_suggestion" }, 400);
-  if (![-1,0,1].includes(v)) return json({ error: "invalid_value" }, 400);
+  const res = await env.DB.prepare(
+    "UPDATE suggestions SET score = score + ?1 WHERE id = ?2"
+  )
+    .bind(delta, id)
+    .run();
 
-  // Upsert vote
-  await env.DB.prepare(`
-    INSERT INTO votes (suggestion_id, viewer_id, value)
-    VALUES (?, ?, ?)
-    ON CONFLICT(suggestion_id, viewer_id) DO UPDATE SET value = excluded.value
-  `).bind(sid, vid, v).run();
+  // If id not found, rowsWritten might be 0
+  if (res?.meta?.changes === 0) return badRequest("not_found", 404);
 
   return json({ ok: true });
-}
-
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8" }
-  });
 }
