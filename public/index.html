@@ -2,464 +2,636 @@
 <html lang="lt">
 <head>
   <meta charset="utf-8" />
-  <title>Game Night Registration</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stalo žaidimų vakaras — registracija</title>
 
   <style>
-    :root {
-      --bg: #0b1324;
-      --card: #121b33;
-      --muted: #9aa3b2;
-      --text: #e7ecf3;
-      --accent: #4ea1ff;
-      --ok: #4caf50;
-      --warn: #ff9800;
-      --danger: #ff5252;
+    :root{
+      --bg0:#071327;
+      --bg1:#0a1731;
+      --card:#0f1e3a;
+      --card2:#0d1a33;
+      --border:#223257;
+      --text:#e9eef7;
+      --muted:#a8b4c8;
+      --muted2:#7f8aa1;
+      --pill:#15264a;
+      --pill2:#0f2144;
+      --accent:#5aa8ff;
+      --accent2:#2e6dff;
+      --danger:#ff5b5b;
+      --shadow: 0 24px 60px rgba(0,0,0,.35);
+      --r:14px;
     }
 
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: linear-gradient(180deg, #0b1324, #0e1730);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      padding: 24px;
+      color:var(--text);
+      background: radial-gradient(900px 520px at 20% 10%, #102a5c 0%, rgba(16,42,92,0) 55%),
+                  linear-gradient(180deg,var(--bg0),var(--bg1));
+      padding:18px 18px 28px;
+    }
+    .wrap{max-width:980px;margin:0 auto}
+
+    .card{
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border:1px solid var(--border);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      padding:16px 16px;
+      margin-bottom:14px;
     }
 
-    .wrap {
-      width: 100%;
-      max-width: 760px;
+    h1,h2,h3{margin:0}
+    h1{font-size:18px;font-weight:700;margin-bottom:8px}
+    h2{font-size:16px;font-weight:700;margin-bottom:8px}
+    h3{font-size:14px;font-weight:700;margin-bottom:8px}
+
+    .muted{color:var(--muted);font-size:12px;line-height:1.35}
+    .muted2{color:var(--muted2);font-size:12px;line-height:1.35}
+
+    .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .space{justify-content:space-between}
+    .stack{display:flex;flex-direction:column;gap:4px}
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, var(--pill), var(--pill2));
+      color:var(--text);
+      font-size:12px;
+      user-select:none;
+      white-space:nowrap;
     }
 
-    h1 {
-      margin: 0 0 8px;
-      font-size: 28px;
+    .btn{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, #1a2d55, #13264a);
+      color:var(--text);
+      padding:8px 12px;
+      border-radius:10px;
+      font-size:12px;
+      cursor:pointer;
+      transition:transform .04s ease;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{
+      border-color: rgba(90,168,255,.55);
+      background: linear-gradient(180deg, rgba(90,168,255,.25), rgba(46,109,255,.22));
+    }
+    .btn.danger{
+      border-color: rgba(255,91,91,.55);
+      color: #ffd6d6;
+      background: linear-gradient(180deg, rgba(255,91,91,.14), rgba(255,91,91,.08));
     }
 
-    .sub {
-      color: var(--muted);
-      margin-bottom: 20px;
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+    }
+    @media (max-width: 860px){
+      .grid2{grid-template-columns:1fr}
     }
 
-    .card {
-      background: var(--card);
-      border-radius: 14px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,.35);
-    }
+    label{display:block;font-size:12px;font-weight:650;margin:10px 0 6px}
+    .subLabel{display:block;font-size:11px;color:var(--muted2);font-weight:500;margin-top:2px}
 
-    .muted {
-      color: var(--muted);
-      font-size: 14px;
+    input, select, textarea{
+      width:100%;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background: rgba(7,19,39,.55);
+      color:var(--text);
+      padding:10px 11px;
+      font-size:12px;
+      outline:none;
     }
+    textarea{resize:vertical;min-height:74px}
 
-    .row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: center;
+    .status{margin-top:10px;font-size:12px}
+    .status.ok{color:#88ff9b}
+    .status.warn{color:#ffd27a}
+
+    .gameList{margin-top:10px}
+    .gameItem{
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px solid var(--border);
     }
-
-    input, select, button, textarea {
-      background: #0e1730;
-      color: var(--text);
-      border: 1px solid #1c2750;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 14px;
+    .gameTop{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
     }
+    .gameTitle{font-weight:700;font-size:13px}
+    .gameMeta{color:var(--muted);font-size:11.5px;margin-top:2px;line-height:1.25}
+    .gameDesc{color:var(--muted2);font-size:11.5px;margin-top:6px;line-height:1.25}
 
-    input, select, textarea {
-      flex: 1;
-      min-width: 200px;
+    .votes{display:flex;align-items:center;gap:6px}
+    .voteBtn{
+      width:28px;height:28px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background: rgba(7,19,39,.45);
+      color:var(--text);
+      cursor:pointer;
     }
+    .score{min-width:20px;text-align:center;font-size:12px;color:var(--text)}
+    .adminOnly{display:none}
+    .adminOn .adminOnly{display:block}
 
-    button {
-      cursor: pointer;
-      border-color: var(--accent);
-    }
-
-    button.primary {
-      background: var(--accent);
-      color: #001a3a;
-      font-weight: 600;
-    }
-
-    button.danger {
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-
-    .status {
-      margin-top: 10px;
-      font-size: 14px;
-    }
-    .status.ok { color: var(--ok); }
-    .status.warn { color: var(--warn); }
-
-    .pill {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #1b264f;
-      font-size: 12px;
-      margin-left: 6px;
-    }
-
-    .gameItem {
-      border-top: 1px solid #1c2750;
-      padding-top: 12px;
-      margin-top: 12px;
-    }
-
-    .gameTop {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .gameTitle {
-      font-weight: 600;
-    }
-
-    .gameMeta {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .votes {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .voteBtn {
-      background: none;
-      border: 1px solid #1c2750;
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      color: var(--text);
-      cursor: pointer;
-    }
-
-    .adminOn .adminOnly { display: block; }
-    .adminOnly { display: none; }
+    a.fakeLink{color:var(--accent);text-decoration:none}
+    a.fakeLink:hover{text-decoration:underline}
   </style>
 </head>
 
 <body>
 <div class="wrap">
 
-  <h1>Game Night Registration</h1>
-  <div class="sub">
-    Internal team-building event · Stalo žaidimų vakaras
-  </div>
-
-  <!-- EVENT INFO -->
+  <!-- TOP CARD -->
   <div class="card">
-    <div id="eventLine">Renginio data: —</div>
-    <div id="eventLineEn" class="muted">Event date: —</div>
+    <div class="row space">
+      <h1>Stalo žaidimų vakaras — registracija</h1>
 
-    <div id="notesLine" class="muted" style="margin-top:6px;"></div>
-
-    <div style="margin-top:12px;">
-      <span id="countPill" class="pill">0 užsiregistravo</span>
-    </div>
-
-    <div class="muted" style="margin-top:10px;">
-      Registered:
-      <span id="whoList">—</span>
-    </div>
-
-    <div class="muted" style="margin-top:10px;">
-      Participation optional, registration required.<br/>
-      Dalyvavimas nebūtinas, bet reikalinga registracija.
-    </div>
-  </div>
-
-  <!-- REGISTRATION -->
-  <div class="card">
-    <h3>Registracija / Registration</h3>
-
-    <form id="regForm">
       <div class="row">
-        <input id="name" placeholder="Vardas / Name" required />
-        <button class="primary" type="submit">Register</button>
+        <button id="jumpRegBtn" class="btn primary" type="button">Užsiregistruoti</button>
+        <span id="datePill" class="pill">—</span>
       </div>
-    </form>
+    </div>
 
-    <div id="regStatus" class="status"></div>
+    <div class="stack" style="margin-top:8px;">
+      <div id="eventLine" class="muted">Renginio data: —</div>
+      <div id="eventLineEn" class="muted2">Event date: —</div>
+
+      <div id="notesLine" class="muted" style="margin-top:4px;"></div>
+      <div id="notesLineEn" class="muted2"></div>
+
+      <div class="muted" style="margin-top:10px;">Užsiregistravę:</div>
+      <div class="muted2">Registered:</div>
+
+      <div id="whoList" class="muted" style="margin-top:4px;">—</div>
+      <div class="muted" style="margin-top:8px;">
+        Dalyvavimas nebūtinas, bet reikalinga registracija
+      </div>
+      <div class="muted2">
+        Participation optional, but registration is required.
+      </div>
+    </div>
   </div>
 
-  <!-- GAME SUGGESTIONS -->
+  <!-- SUGGESTIONS + VOTING CARD -->
   <div class="card">
-    <h3>Žaidimų pasiūlymai / Game suggestions</h3>
+    <div class="row space">
+      <div>
+        <h2>Žaidimų pasiūlymai ir balsavimas</h2>
+        <div class="muted">Pasiūlyk žaidimą ir balsuok, ką žaisime.</div>
+        <div class="muted2">Suggest a game and vote what we’ll play.</div>
+      </div>
 
-    <form id="gameForm">
       <div class="row">
-        <input id="gTitle" placeholder="Žaidimo pavadinimas / Game title" />
-        <select id="gDifficulty">
-          <option value="">Sudėtingumas / Difficulty</option>
-          <option value="1">Lengvas / Easy</option>
-          <option value="2">Vidutinis / Medium</option>
-          <option value="3">Sunkesnis / Harder</option>
-        </select>
+        <button id="jumpSuggestBtn" class="btn primary" type="button">0 pasiūlymų</button>
+        <span class="pill">rūšiuojama pagal balsus</span>
       </div>
+    </div>
 
-      <div class="row" style="margin-top:10px;">
-        <input id="gHost" placeholder="Vedėjas / Host" />
-        <input id="gPlayers" placeholder="Žaidėjai (pvz. 2–4)" />
-        <select id="gType">
-          <option value="">Tipas / Type</option>
-          <option value="Party">Party</option>
-          <option value="Strategy">Strategy</option>
-          <option value="Co-op">Co-op</option>
-        </select>
-      </div>
+    <div id="gameList" class="gameList">
+      <div class="muted" style="margin-top:8px;">Kol kas nėra pasiūlymų — pridėk savo 🙂</div>
+      <div class="muted2">No suggestions yet — add one 🙂</div>
+    </div>
 
-      <div class="row" style="margin-top:10px;">
-        <textarea id="gDesc" placeholder="Pastabos / Notes (nebūtina)" rows="2"></textarea>
-      </div>
-
-      <button class="primary" style="margin-top:10px;" type="submit">
-        Add suggestion
-      </button>
-    </form>
-
-    <div id="gameStatus" class="status"></div>
-
-    <div id="gameList"></div>
+    <div class="muted" style="margin-top:12px;">
+      Sudėtingumas: jei taisyklės turi puslapių skaičius daugiau nei 10, tai yra sudėtingas žaidimas
+    </div>
+    <div class="muted2">
+      Complexity: if the rulebook has more than 10 pages, the game is considered complex.
+    </div>
   </div>
 
-  <!-- ADMIN -->
-  <div class="card adminOnly">
-    <h3>Admin</h3>
+  <!-- TWO COLUMN: REG + SUGGEST -->
+  <div class="grid2">
 
-    <form id="adminForm">
+    <!-- REGISTRATION CARD -->
+    <div class="card" id="regCard">
+      <h2>Registracija</h2>
+      <div class="muted2">Registration</div>
+
+      <form id="regForm" style="margin-top:8px;">
+        <label for="name">Vardas, pavardė <span class="subLabel">Name</span></label>
+        <input id="name" autocomplete="name" placeholder="Pvz., Audrius Preikšas" required />
+
+        <button class="btn primary" style="margin-top:10px;" type="submit">
+          Užsiregistruoti
+          <span class="muted2" style="margin-left:8px;">Register</span>
+        </button>
+
+        <div class="muted2" style="margin-top:10px;">
+          Registruojiesi datai viršuje
+        </div>
+        <div class="muted2">
+          You’re registering for the date shown above
+        </div>
+
+        <div id="regStatus" class="status"></div>
+      </form>
+    </div>
+
+    <!-- SUGGESTION CARD -->
+    <div class="card" id="suggestCard">
+      <h2>Siūlyti stalo žaidimą</h2>
+      <div class="muted2">Suggest a board game</div>
+
+      <form id="gameForm" style="margin-top:8px;">
+        <label for="gTitle">Žaidimo pavadinimas <span class="subLabel">Game title</span></label>
+        <input id="gTitle" placeholder="Pvz., Codenames" />
+
+        <div class="grid2" style="gap:10px;">
+          <div>
+            <label for="gDifficulty">Sudėtingumas (1/2/3) <span class="subLabel">Complexity (1/2/3)</span></label>
+            <select id="gDifficulty">
+              <option value="">Pasirinkti…</option>
+              <option value="1">1 — Lengvas / Easy</option>
+              <option value="2">2 — Vidutinis / Medium</option>
+              <option value="3">3 — Sunkesnis / Harder</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="gHost">Reikalingas vedėjas <span class="subLabel">Needs a host (Yes/No)</span></label>
+            <select id="gHost">
+              <option value="">Pasirinkti…</option>
+              <option value="Taip / Yes">Taip / Yes</option>
+              <option value="Ne / No">Ne / No</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid2" style="gap:10px;">
+          <div>
+            <label for="gPlayers">Žaidėjų skaičius be vedėjo* <span class="subLabel">Player count without a host*</span></label>
+            <input id="gPlayers" placeholder="Pvz., 2–6" />
+          </div>
+
+          <div>
+            <label for="gType">Žaidimo tipas (co-op / comp) <span class="subLabel">Type (co-op / competitive)</span></label>
+            <select id="gType">
+              <option value="">Pasirinkti…</option>
+              <option value="Co-op">Co-op</option>
+              <option value="Competitive">Competitive</option>
+              <option value="Party">Party</option>
+              <option value="Strategy">Strategy</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="gDesc">Trumpas aprašymas <span class="subLabel">Short description</span></label>
+        <textarea id="gDesc" placeholder="1–2 sakiniai: kuo smagus, kiek trunka, ar lengva išmokti…"></textarea>
+
+        <button class="btn primary" style="margin-top:10px;" type="submit">
+          Pateikti pasiūlymą
+          <span class="muted2" style="margin-left:8px;">Submit suggestion</span>
+        </button>
+
+        <div id="gameStatus" class="status"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN CARD -->
+  <div class="card adminOnly" id="adminCard">
+    <h2>Organizatorius?</h2>
+    <div class="muted2">Organizer?</div>
+
+    <div class="muted" style="margin-top:8px;">
+      Admin įrankiai paslėpti. Įjunk admin režimą atsidaręs puslapį:
+    </div>
+    <div class="muted2">
+      Admin tools are hidden. Enable admin mode by opening:
+    </div>
+    <div class="muted" style="margin-top:6px;">
+      <code>#admin=YOUR_KEY</code>
+    </div>
+
+    <form id="adminForm" style="margin-top:10px;">
       <div class="row">
         <input id="eventDate" type="date" />
         <input id="eventNotes" placeholder="Info / Notes" />
-        <button class="primary" type="submit">Save</button>
+        <button class="btn primary" type="submit">Save</button>
       </div>
     </form>
 
     <div class="row" style="margin-top:10px;">
-      <button id="clearRegsBtn" class="danger">Clear registrations</button>
-      <button id="clearGamesBtn" class="danger">Clear games</button>
+      <button id="clearRegsBtn" class="btn danger" type="button">Clear registrations</button>
+      <button id="clearGamesBtn" class="btn danger" type="button">Clear games</button>
     </div>
 
     <div id="adminStatus" class="status"></div>
   </div>
 
+  <!-- Non-admin hint (visible only when admin is OFF) -->
+  <div class="card" id="nonAdminHint">
+    <div class="muted">Organizatorius?</div>
+    <div class="muted2">Organizer?</div>
+    <div class="muted2" style="margin-top:6px;">
+      Admin įrankiai paslėpti. Įjunk admin režimą atsidaręs puslapį:
+    </div>
+    <div class="muted2">
+      Admin tools are hidden. Enable admin mode by opening:
+    </div>
+    <div class="muted" style="margin-top:6px;">
+      <code>#admin=YOUR_KEY</code>
+    </div>
+  </div>
+
 </div>
 
 <script>
-/* =======================
-   SAFE HELPERS
-======================= */
+/* ========= Helpers ========= */
 const $ = (id) => document.getElementById(id);
 
 function setText(id, text) {
   const el = $(id);
   if (el) el.textContent = text;
 }
-
 function setHTML(id, html) {
   const el = $(id);
   if (el) el.innerHTML = html;
 }
-
+function escapeHtml(str) {
+  return String(str || "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
 function uid() {
-  return "g_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  return "g_" + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
 }
 
-/* =======================
-   ADMIN
-======================= */
+/* ========= Admin ========= */
 function getAdminToken() {
   const m = location.hash.match(/admin=([^&]+)/);
   return m ? decodeURIComponent(m[1]) : "";
 }
-function isAdmin() {
-  return !!getAdminToken();
-}
+function isAdmin() { return !!getAdminToken(); }
 function adminHeaders() {
   const t = getAdminToken();
   return t ? { "Authorization": "Bearer " + t } : {};
 }
 
-/* =======================
-   API
-======================= */
+/* ========= API ========= */
 async function apiGet(url) {
   const r = await fetch(url);
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || "GET failed");
+  if (!r.ok) throw new Error(j.error || `GET failed (${r.status})`);
   return j;
 }
-async function apiPost(url, body, headers = {}) {
+async function apiPost(url, body, headers={}) {
   const r = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...headers },
-    body: JSON.stringify(body),
+    method:"POST",
+    headers: { "Content-Type":"application/json", ...headers },
+    body: JSON.stringify(body)
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || "POST failed");
+  if (!r.ok) throw new Error(j.error || `POST failed (${r.status})`);
   return j;
 }
-async function apiDelete(url, headers = {}) {
-  const r = await fetch(url, { method: "DELETE", headers });
+async function apiDelete(url, headers={}) {
+  const r = await fetch(url, { method:"DELETE", headers });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || "DELETE failed");
+  if (!r.ok) throw new Error(j.error || `DELETE failed (${r.status})`);
   return j;
 }
 
-/* =======================
-   STATE
-======================= */
-const state = { evt: {}, regs: [], games: [] };
+/* ========= State ========= */
+const state = { evt:{date:"",notes:""}, regs:[], games:[] };
 
-/* =======================
-   RENDER
-======================= */
-function render() {
+/* ========= Render ========= */
+function renderHeader() {
+  const d = state.evt.date || "—";
+  setText("datePill", d);
+
+  setText("eventLine", `Renginio data: ${d}`);
+  setText("eventLineEn", `Event date: ${d}`);
+
+  const notes = (state.evt.notes || "").trim();
+  if (notes) {
+    setText("notesLine", `Info: ${notes}`);
+    setText("notesLineEn", `Info: ${notes}`);
+  } else {
+    setText("notesLine", "");
+    setText("notesLineEn", "");
+  }
+
+  if (state.regs.length === 0) {
+    setText("whoList", "Kol kas nieko 🙂");
+  } else {
+    setText("whoList", state.regs.map(r => r.name).join(", "));
+  }
+}
+
+function renderAdminVisibility() {
   document.body.classList.toggle("adminOn", isAdmin());
-
-  setText("eventLine", `Renginio data: ${state.evt.date || "—"}`);
-  setText("eventLineEn", `Event date: ${state.evt.date || "—"}`);
-
-  setHTML("notesLine", state.evt.notes ? state.evt.notes : "");
-
-  setText("countPill", `${state.regs.length} užsiregistravo`);
-  setText("whoList", state.regs.length ? state.regs.map(r => r.name).join(", ") : "—");
+  const adminCard = $("adminCard");
+  const nonAdminHint = $("nonAdminHint");
+  if (adminCard) adminCard.style.display = isAdmin() ? "block" : "none";
+  if (nonAdminHint) nonAdminHint.style.display = isAdmin() ? "none" : "block";
 
   if (isAdmin()) {
     if ($("eventDate")) $("eventDate").value = state.evt.date || "";
     if ($("eventNotes")) $("eventNotes").value = state.evt.notes || "";
   }
-
-  renderGames();
 }
 
 function renderGames() {
   const list = $("gameList");
+  const jumpBtn = $("jumpSuggestBtn");
+  if (jumpBtn) jumpBtn.textContent = `${state.games.length} pasiūlymų`;
+
   if (!list) return;
 
   if (!state.games.length) {
-    list.innerHTML = `<div class="muted">Kol kas nėra pasiūlymų.</div>`;
+    list.innerHTML =
+      `<div class="muted" style="margin-top:8px;">Kol kas nėra pasiūlymų — pridėk savo 🙂</div>
+       <div class="muted2">No suggestions yet — add one 🙂</div>`;
     return;
   }
 
-  list.innerHTML = state.games.map(g => `
-    <div class="gameItem">
-      <div class="gameTop">
-        <div>
-          <div class="gameTitle">${g.title}</div>
-          <div class="gameMeta">
-            ${g.host} · ${g.players} · ${g.type}
+  list.innerHTML = state.games.map(g => {
+    const score = Number(g.score || 0);
+    const metaLt = `Sudėtingumas: ${g.difficulty} • Vedėjas: ${g.host} • Žaidėjai: ${g.players} • Tipas: ${g.type}`;
+    const metaEn = `Complexity: ${g.difficulty} • Host: ${g.host} • Players: ${g.players} • Type: ${g.type}`;
+
+    return `
+      <div class="gameItem">
+        <div class="gameTop">
+          <div style="min-width:240px;flex:1;">
+            <div class="gameTitle">${escapeHtml(g.title)}</div>
+            <div class="gameMeta">${escapeHtml(metaLt)}</div>
+            <div class="gameMeta" style="color:var(--muted2)">${escapeHtml(metaEn)}</div>
+          </div>
+          <div class="votes">
+            <button class="voteBtn" data-id="${escapeHtml(g.id)}" data-delta="1" title="Upvote">▲</button>
+            <span class="score">${score}</span>
+            <button class="voteBtn" data-id="${escapeHtml(g.id)}" data-delta="-1" title="Downvote">▼</button>
           </div>
         </div>
-        <div class="votes">
-          <button class="voteBtn" data-id="${g.id}" data-delta="1">▲</button>
-          <span>${g.score}</span>
-          <button class="voteBtn" data-id="${g.id}" data-delta="-1">▼</button>
-        </div>
+        ${g.desc ? `<div class="gameDesc">${escapeHtml(g.desc)}</div>` : ""}
       </div>
-      ${g.desc ? `<div class="muted">${g.desc}</div>` : ""}
-    </div>
-  `).join("");
+    `;
+  }).join("");
 
-  document.querySelectorAll(".voteBtn").forEach(b => {
-    b.onclick = async () => {
-      await apiPost("/api/vote", {
-        id: b.dataset.id,
-        delta: Number(b.dataset.delta)
-      });
-      await refreshAll();
-    };
+  document.querySelectorAll(".voteBtn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+      const delta = Number(btn.getAttribute("data-delta"));
+      try {
+        await apiPost("/api/vote", { id, delta });
+        await refreshAll();
+      } catch (e) {
+        alert(e.message);
+      }
+    });
   });
 }
 
-/* =======================
-   LOAD
-======================= */
-async function refreshAll() {
-  state.evt = await apiGet("/api/event");
-  const r = await apiGet(`/api/registrations?date=${state.evt.date}`);
-  state.regs = r.registrations || [];
-  const g = await apiGet("/api/suggestions");
-  state.games = g.rows || [];
-  render();
+function renderAll() {
+  renderAdminVisibility();
+  renderHeader();
+  renderGames();
 }
 
-/* =======================
-   EVENTS
-======================= */
-$("regForm").onsubmit = async (e) => {
-  e.preventDefault();
-  try {
-    await apiPost("/api/registrations", {
-      date: state.evt.date,
-      name: $("name").value.trim()
-    });
-    setText("regStatus", "Registered!");
-    await refreshAll();
-  } catch (e) {
-    setText("regStatus", e.message);
-  }
-};
+/* ========= Load ========= */
+async function refreshAll() {
+  state.evt = await apiGet("/api/event");
+  const regs = await apiGet(`/api/registrations?date=${encodeURIComponent(state.evt.date)}`);
+  state.regs = regs.registrations || [];
+  const games = await apiGet("/api/suggestions");
+  state.games = games.rows || [];
+  renderAll();
+}
 
-$("gameForm").onsubmit = async (e) => {
+/* ========= UI actions ========= */
+$("jumpRegBtn")?.addEventListener("click", () => {
+  $("regCard")?.scrollIntoView({ behavior:"smooth", block:"start" });
+  $("name")?.focus();
+});
+$("jumpSuggestBtn")?.addEventListener("click", () => {
+  $("suggestCard")?.scrollIntoView({ behavior:"smooth", block:"start" });
+  $("gTitle")?.focus();
+});
+
+/* ========= Forms ========= */
+$("regForm")?.addEventListener("submit", async (e) => {
   e.preventDefault();
+  const status = $("regStatus");
+  if (status) { status.className="status"; status.textContent=""; }
+
+  const name = ($("name")?.value || "").trim().replace(/\s+/g," ").slice(0,60);
+  if (name.length < 2) {
+    if (status) { status.className="status warn"; status.textContent="Įvesk vardą (min 2 simboliai) / Please enter a name (min 2 characters)"; }
+    return;
+  }
+
+  try {
+    await apiPost("/api/registrations", { date: state.evt.date, name });
+    if (status) { status.className="status ok"; status.textContent="Užsiregistruota! / Registered!"; }
+    $("regForm").reset();
+    await refreshAll();
+  } catch (err) {
+    const msg = String(err.message || err);
+    if (status) { status.className="status warn"; status.textContent=msg; }
+  }
+});
+
+$("gameForm")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const status = $("gameStatus");
+  if (status) { status.className="status"; status.textContent=""; }
+
+  const title = ($("gTitle")?.value || "").trim();
+  const difficulty = Number($("gDifficulty")?.value || 0);
+  const host = ($("gHost")?.value || "").trim();
+  const players = ($("gPlayers")?.value || "").trim();
+  const type = ($("gType")?.value || "").trim();
+  const desc = ($("gDesc")?.value || "").trim();
+
+  if (title.length < 2 || !difficulty || !host || !players || !type) {
+    if (status) {
+      status.className="status warn";
+      status.textContent="Užpildyk visus laukus / Please fill all fields";
+    }
+    return;
+  }
+
   try {
     await apiPost("/api/suggestions", {
       id: uid(),
-      title: $("gTitle").value,
-      difficulty: Number($("gDifficulty").value),
-      host: $("gHost").value,
-      players: $("gPlayers").value,
-      type: $("gType").value,
-      desc: $("gDesc").value
+      title,
+      difficulty,
+      host,
+      players,
+      type,
+      desc
     });
-    setText("gameStatus", "Added!");
+    if (status) { status.className="status ok"; status.textContent="Pasiūlymas pateiktas / Suggestion submitted"; }
+    $("gameForm").reset();
     await refreshAll();
-  } catch (e) {
-    setText("gameStatus", e.message);
+  } catch (err) {
+    if (status) { status.className="status warn"; status.textContent=String(err.message || err); }
   }
-};
+});
 
-$("adminForm").onsubmit = async (e) => {
+/* ========= Admin ========= */
+$("adminForm")?.addEventListener("submit", async (e) => {
   e.preventDefault();
+  const status = $("adminStatus");
+  if (status) { status.className="status"; status.textContent=""; }
+
   try {
     await apiPost("/api/admin/event", {
-      date: $("eventDate").value,
-      notes: $("eventNotes").value
+      date: $("eventDate")?.value,
+      notes: $("eventNotes")?.value || ""
     }, adminHeaders());
-    setText("adminStatus", "Saved");
+    if (status) { status.className="status ok"; status.textContent="Saved"; }
     await refreshAll();
-  } catch (e) {
-    setText("adminStatus", e.message);
+  } catch (err) {
+    if (status) { status.className="status warn"; status.textContent=String(err.message || err); }
   }
-};
+});
 
-$("clearRegsBtn").onclick = async () => {
-  await apiDelete(`/api/registrations?date=${state.evt.date}`, adminHeaders());
-  await refreshAll();
-};
+$("clearRegsBtn")?.addEventListener("click", async () => {
+  const status = $("adminStatus");
+  if (status) { status.className="status"; status.textContent=""; }
+  try {
+    await apiDelete(`/api/registrations?date=${encodeURIComponent(state.evt.date)}`, adminHeaders());
+    if (status) { status.className="status ok"; status.textContent="Registrations cleared"; }
+    await refreshAll();
+  } catch (err) {
+    if (status) { status.className="status warn"; status.textContent=String(err.message || err); }
+  }
+});
 
-$("clearGamesBtn").onclick = async () => {
-  await apiDelete("/api/suggestions", adminHeaders());
-  await refreshAll();
-};
+$("clearGamesBtn")?.addEventListener("click", async () => {
+  const status = $("adminStatus");
+  if (status) { status.className="status"; status.textContent=""; }
+  try {
+    await apiDelete("/api/suggestions", adminHeaders());
+    if (status) { status.className="status ok"; status.textContent="Games cleared"; }
+    await refreshAll();
+  } catch (err) {
+    if (status) { status.className="status warn"; status.textContent=String(err.message || err); }
+  }
+});
 
-refreshAll();
+/* ========= Boot ========= */
+window.addEventListener("hashchange", () => renderAdminVisibility());
+refreshAll().catch(e => alert("Backend error: " + e.message));
 </script>
 </body>
 </html>
