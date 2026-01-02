@@ -248,115 +248,101 @@
   </div>
 
 <script>
-/**
- * =========================
- * CONFIG
- * =========================
- */
-const ADMIN_KEY = "CHANGE_ME_TO_A_SECRET";
-
-// Storage keys
-const STORAGE_EVENT = "sbep_event_v1"; // {date:"YYYY-MM-DD", notes:"..."}
-const STORAGE_REGS  = "sbep_regs_v1";  // map by date: { "2026-01-16": [{name, ts}, ...], ... }
-
-// Games + votes
-const STORAGE_GAMES = "sbep_games_v1"; // [{id, title, difficulty, host, players, type, desc, createdAt}]
-const STORAGE_VOTES = "sbep_votes_v1"; // { [gameId]: -1|0|1 } per device
-
 const $ = (id) => document.getElementById(id);
 
-function isAdmin() {
+// -------- Admin token from URL hash --------
+// Use: https://site/#admin=YOUR_TOKEN
+function getAdminToken() {
   const hash = window.location.hash || "";
   const m = hash.match(/admin=([^&]+)/);
-  if (!m) return false;
-  try { return decodeURIComponent(m[1]) === ADMIN_KEY; } catch { return false; }
+  if (!m) return "";
+  try { return decodeURIComponent(m[1]); } catch { return ""; }
+}
+function isAdmin() { return !!getAdminToken(); }
+function adminHeaders() {
+  const t = getAdminToken();
+  return t ? { "Authorization": "Bearer " + t } : {};
 }
 
-function loadEvent() {
-  const raw = localStorage.getItem(STORAGE_EVENT);
-  if (raw) { try { return JSON.parse(raw); } catch {} }
-  return { date: "2026-01-16", notes: "" };
-}
-function saveEvent(evt) { localStorage.setItem(STORAGE_EVENT, JSON.stringify(evt)); }
-
-function loadRegsMap() {
-  const raw = localStorage.getItem(STORAGE_REGS);
-  if (raw) { try { return JSON.parse(raw); } catch {} }
-  return {};
-}
-function saveRegsMap(map) { localStorage.setItem(STORAGE_REGS, JSON.stringify(map)); }
-
+// -------- Helpers (keep your existing behavior) --------
 function sanitizeName(name) {
-  return String(name || "").trim().replace(/\s+/g, " ");
-}
-
-function getRegsForDate(date) {
-  const map = loadRegsMap();
-  return Array.isArray(map[date]) ? map[date] : [];
-}
-function setRegsForDate(date, regs) {
-  const map = loadRegsMap();
-  map[date] = regs;
-  saveRegsMap(map);
-}
-
-// ---------- Games ----------
-function loadGames() {
-  const raw = localStorage.getItem(STORAGE_GAMES);
-  if (raw) { try { return JSON.parse(raw); } catch {} }
-  return [];
-}
-function saveGames(games) {
-  localStorage.setItem(STORAGE_GAMES, JSON.stringify(games));
-}
-function loadVotes() {
-  const raw = localStorage.getItem(STORAGE_VOTES);
-  if (raw) { try { return JSON.parse(raw); } catch {} }
-  return {};
-}
-function saveVotes(votes) {
-  localStorage.setItem(STORAGE_VOTES, JSON.stringify(votes));
+  return String(name || "").trim().replace(/\s+/g, " ").slice(0, 60);
 }
 function uid() {
-  return (crypto?.randomUUID?.() || ("id-" + Math.random().toString(16).slice(2) + Date.now()));
+  return "g_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
-function normalizeTitle(t) {
-  return String(t || "").trim().replace(/\s+/g, " ");
+function normalizeTitle(s) {
+  return String(s || "").trim().replace(/\s+/g, " ").slice(0, 120);
 }
-function scoreForGame(gameId) {
-  // In this no-backend version, "score" is computed from per-device votes only.
-  // (If you add backend later, this becomes global votes.)
-  const votes = loadVotes();
-  return votes[gameId] || 0;
+function escapeHtml(str) {
+  return String(str || "").replace(/[&<>"']/g, (m) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[m]));
 }
 function metaText(g) {
-  const diff = g.difficulty;
-  const host = (g.host === "yes") ? "vedėjas: taip" : "vedėjas: ne";
-  const type = (g.type === "coop") ? "co-op" : "competitive";
-  return `Sudėtingumas: ${diff} • ${host} • žaidėjai: ${g.players} • tipas: ${type}`;
+  const diff = Number(g.difficulty);
+  const diffText = diff === 1 ? "Lengvas" : diff === 2 ? "Vidutinis" : "Sunkesnis";
+  const diffTextEn = diff === 1 ? "Easy" : diff === 2 ? "Medium" : "Harder";
+  return `${diffText} • Vedėjas: ${g.host} • Žaidėjai: ${g.players} • Tipas: ${g.type}
+    — ${diffTextEn} • Host: ${g.host} • Players: ${g.players} • Type: ${g.type}`;
 }
 
-function renderGames() {
-  const games = loadGames();
-  const votes = loadVotes();
-
-  // Sort by score desc, then newest
-  const sorted = [...games].sort((a,b) => {
-    const sa = (votes[a.id] || 0);
-    const sb = (votes[b.id] || 0);
-    if (sb !== sa) return sb - sa;
-    return (b.createdAt || "").localeCompare(a.createdAt || "");
+// -------- API helpers --------
+async function apiGet(path) {
+  const res = await fetch(path);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `GET failed (${res.status})`);
+  return data;
+}
+async function apiPost(path, body, headers = {}) {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(body),
   });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `POST failed (${res.status})`);
+  return data;
+}
+async function apiDelete(path, headers = {}) {
+  const res = await fetch(path, { method: "DELETE", headers });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `DELETE failed (${res.status})`);
+  return data;
+}
 
-  $("gameCountPill").textContent = `${games.length} suggestions`;
+// -------- In-memory state (no localStorage) --------
+const state = {
+  evt: { date: "2026-01-16", notes: "" },
+  regs: [],
+  games: []
+};
 
-  if (sorted.length === 0) {
-    $("gameList").innerHTML = `<p class="muted" style="margin-top:10px;">No suggestions yet — add one below 🙂</p>`;
+// -------- Load everything from backend --------
+async function refreshAll() {
+  state.evt = await apiGet("/api/event");
+
+  const regData = await apiGet(`/api/registrations?date=${encodeURIComponent(state.evt.date)}`);
+  state.regs = regData.registrations || [];
+
+  const sugData = await apiGet("/api/suggestions");
+  state.games = sugData.rows || [];
+
+  render();
+}
+
+// -------- Render games --------
+function renderGames() {
+  const games = state.games || [];
+  if (games.length === 0) {
+    $("gameList").innerHTML = `<p class="muted" style="margin-top:10px;">
+      Kol kas nėra pasiūlymų — pridėk savo 🙂<span class="suben">No suggestions yet — add one 🙂</span>
+    </p>`;
     return;
   }
 
-  $("gameList").innerHTML = sorted.map(g => {
-    const score = votes[g.id] || 0;
+  $("gameList").innerHTML = games.map(g => {
+    const score = Number(g.score || 0);
     return `
       <div class="gameItem">
         <div class="gameTop">
@@ -364,44 +350,34 @@ function renderGames() {
             <p class="gameTitle">${escapeHtml(g.title)}</p>
             <p class="gameMeta">${escapeHtml(metaText(g))}</p>
           </div>
-          <div class="voteBox" aria-label="Voting">
-            <button class="voteBtn" data-vote="-1" data-id="${g.id}" title="Downvote">−</button>
-            <div class="score" title="Score">${score}</div>
-            <button class="voteBtn" data-vote="1" data-id="${g.id}" title="Upvote">+</button>
+
+          <div class="votes">
+            <button class="voteBtn" data-id="${escapeHtml(g.id)}" data-delta="1">▲</button>
+            <span class="score">${score}</span>
+            <button class="voteBtn" data-id="${escapeHtml(g.id)}" data-delta="-1">▼</button>
           </div>
         </div>
-        <div class="gameDesc">${escapeHtml(g.desc)}</div>
+
+        ${g.desc ? `<div class="gameDesc">${escapeHtml(g.desc)}</div>` : ""}
       </div>
     `;
   }).join("");
 
-  // Attach vote handlers
   document.querySelectorAll(".voteBtn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-id");
-      const v = Number(btn.getAttribute("data-vote")) || 0;
-
-      const votesNow = loadVotes();
-      const current = votesNow[id] || 0;
-
-      // Toggle behavior: clicking same vote again removes it
-      const next = (current === v) ? 0 : v;
-      votesNow[id] = next;
-      saveVotes(votesNow);
-      renderGames();
+      const delta = Number(btn.getAttribute("data-delta")) || 0;
+      try {
+        await apiPost("/api/vote", { id, delta });
+        await refreshAll();
+      } catch (e) {
+        alert(e.message);
+      }
     });
   });
 }
 
-// Simple HTML escape
-function escapeHtml(s) {
-  return String(s ?? "")
-    .replaceAll("&","&amp;").replaceAll("<","&lt;")
-    .replaceAll(">","&gt;").replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-// ---------- Render all ----------
+// -------- Render all --------
 function render() {
   const admin = isAdmin();
   document.body.classList.toggle("adminOn", admin);
@@ -409,22 +385,22 @@ function render() {
   $("adminCard").style.display = admin ? "block" : "none";
   $("nonAdminHint").style.display = admin ? "none" : "block";
 
-  const evt = loadEvent();
-  const regs = getRegsForDate(evt.date);
+  const evt = state.evt;
+  const regs = state.regs || [];
 
-  $("eventLine").textContent = `Event date: ${evt.date}`;
+  // These IDs exist in your HTML already
+  $("eventLine").firstChild.textContent = `Renginio data: ${evt.date}`;
+  $("eventLineEn").textContent = `Event date: ${evt.date}`;
   $("datePill").textContent = evt.date;
 
   const notes = (evt.notes || "").trim();
-  $("notesLine").textContent = notes ? `Info: ${notes}` : "";
+  $("notesLine").textContent = "";
+  if (notes) $("notesLine").innerHTML = `Info: ${escapeHtml(notes)}<span class="suben">Info: ${escapeHtml(notes)}</span>`;
 
-  $("countPill").textContent = `${regs.length} registered`;
+  $("countPill").textContent = `${regs.length} užsiregistravo`;
 
-  if (regs.length === 0) {
-    $("whoList").textContent = "No one yet — be the first 🙂";
-  } else {
-    $("whoList").textContent = regs.map(r => r.name).join(", ");
-  }
+  if (regs.length === 0) $("whoList").textContent = "Kol kas nieko 🙂";
+  else $("whoList").textContent = regs.map(r => r.name).join(", ");
 
   if (admin) {
     $("eventDate").value = evt.date;
@@ -434,44 +410,41 @@ function render() {
   renderGames();
 }
 
-// ---------- Registration form ----------
-$("regForm").addEventListener("submit", (e) => {
+// -------- Registration submit --------
+$("regForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const evt = loadEvent();
-  const name = sanitizeName($("name").value);
 
+  const name = sanitizeName($("name").value);
   const status = $("regStatus");
   status.textContent = "";
   status.className = "status";
 
   if (name.length < 2) {
-    status.textContent = "Please enter your name (min 2 characters).";
+    status.innerHTML = `Įvesk vardą (min 2 simboliai).<span class="suben">Please enter your name (min 2 characters).</span>`;
     status.classList.add("warn");
     return;
   }
 
-  const regs = getRegsForDate(evt.date);
-
-  const exists = regs.some(r => r.name.toLowerCase() === name.toLowerCase());
-  if (exists) {
-    status.textContent = `You're already registered for ${evt.date}.`;
+  try {
+    await apiPost("/api/registrations", { date: state.evt.date, name });
+    status.innerHTML = `Užsiregistruota! Iki pasimatymo 🙂<span class="suben">Registered! See you 🙂</span>`;
+    status.classList.add("ok");
+    $("regForm").reset();
+    $("name").focus();
+    await refreshAll();
+  } catch (err) {
+    if ((err.message || "").includes("already_registered")) {
+      status.innerHTML = `Jau esi užsiregistravęs šiai datai.<span class="suben">You're already registered for this date.</span>`;
+      status.classList.add("warn");
+      return;
+    }
+    status.textContent = err.message;
     status.classList.add("warn");
-    return;
   }
-
-  regs.push({ name, ts: new Date().toISOString() });
-  setRegsForDate(evt.date, regs);
-
-  status.textContent = `Thanks, ${name}! Registered for ${evt.date}.`;
-  status.classList.add("ok");
-
-  $("regForm").reset();
-  $("name").focus();
-  render();
 });
 
-// ---------- Game suggestion form ----------
-$("gameForm").addEventListener("submit", (e) => {
+// -------- Suggest a game --------
+$("gameForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const status = $("gameStatus");
@@ -486,129 +459,111 @@ $("gameForm").addEventListener("submit", (e) => {
   const desc = normalizeTitle($("gDesc").value);
 
   if (title.length < 2) {
-    status.textContent = "Įrašyk žaidimo pavadinimą.";
+    status.innerHTML = `Įrašyk žaidimo pavadinimą.<span class="suben">Please enter a game title.</span>`;
     status.classList.add("warn");
     return;
   }
   if (!difficulty || !host || !type) {
-    status.textContent = "Užpildyk sudėtingumą, vedėją ir tipą.";
+    status.innerHTML = `Užpildyk sudėtingumą, vedėją ir tipą.<span class="suben">Please fill complexity, host and type.</span>`;
     status.classList.add("warn");
     return;
   }
   if (players.length < 1) {
-    status.textContent = "Įrašyk žaidėjų skaičių (pvz., 2–6).";
-    status.classList.add("warn");
-    return;
-  }
-  if (desc.length < 3) {
-    status.textContent = "Trumpas aprašymas per trumpas.";
+    status.innerHTML = `Įrašyk žaidėjų skaičių (pvz. 2–4).<span class="suben">Please enter player count (e.g. 2–4).</span>`;
     status.classList.add("warn");
     return;
   }
 
-  const games = loadGames();
+  try {
+    await apiPost("/api/suggestions", {
+      id: uid(),
+      title,
+      difficulty: Number(difficulty),
+      host,
+      players,
+      type,
+      desc
+    });
 
-  // Prevent duplicate titles (case-insensitive)
-  const dup = games.some(g => g.title.toLowerCase() === title.toLowerCase());
-  if (dup) {
-    status.textContent = "Šis žaidimas jau pasiūlytas (pabandyk papildyti aprašymą kitame pasiūlyme).";
+    status.innerHTML = `Ačiū! Pasiūlymas pridėtas.<span class="suben">Thanks! Suggestion added.</span>`;
+    status.classList.add("ok");
+    $("gameForm").reset();
+    $("gTitle").focus();
+    await refreshAll();
+  } catch (err) {
+    status.textContent = err.message;
     status.classList.add("warn");
-    return;
   }
-
-  const game = {
-    id: uid(),
-    title,
-    difficulty: Number(difficulty),
-    host,
-    players,
-    type,
-    desc,
-    createdAt: new Date().toISOString()
-  };
-
-  games.push(game);
-  saveGames(games);
-
-  status.textContent = "Ačiū! Pasiūlymas pridėtas.";
-  status.classList.add("ok");
-
-  $("gameForm").reset();
-  $("gTitle").focus();
-  renderGames();
 });
 
-// ---------- Admin ----------
-$("adminForm").addEventListener("submit", (e) => {
+// -------- Admin: save event --------
+$("adminForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+
   const status = $("adminStatus");
   status.textContent = "";
   status.className = "status";
 
   if (!isAdmin()) {
-    status.textContent = "Admin mode not enabled.";
+    status.innerHTML = `Admin režimas neįjungtas.<span class="suben">Admin mode not enabled.</span>`;
     status.classList.add("warn");
     return;
   }
 
   const date = $("eventDate").value;
-  if (!date) {
-    status.textContent = "Please select an event date.";
-    status.classList.add("warn");
-    return;
-  }
-
   const notes = ($("eventNotes").value || "").trim();
-  saveEvent({ date, notes });
 
-  status.textContent = `Saved event: ${date}`;
-  status.classList.add("ok");
-  render();
+  try {
+    await apiPost("/api/admin/event", { date, notes }, adminHeaders());
+    status.innerHTML = `Išsaugota: ${escapeHtml(date)}<span class="suben">Saved: ${escapeHtml(date)}</span>`;
+    status.classList.add("ok");
+    await refreshAll();
+  } catch (err) {
+    status.textContent = err.message;
+    status.classList.add("warn");
+  }
 });
 
-$("clearRegsBtn").addEventListener("click", () => {
+// -------- Admin: clear regs / games --------
+$("clearRegsBtn").addEventListener("click", async () => {
   const status = $("adminStatus");
   status.textContent = "";
   status.className = "status";
 
-  if (!isAdmin()) {
-    status.textContent = "Admin mode not enabled.";
+  try {
+    await apiDelete(`/api/registrations?date=${encodeURIComponent(state.evt.date)}`, adminHeaders());
+    status.innerHTML = `Išvalytos registracijos: ${escapeHtml(state.evt.date)}<span class="suben">Cleared registrations: ${escapeHtml(state.evt.date)}</span>`;
+    status.classList.add("ok");
+    await refreshAll();
+  } catch (err) {
+    status.textContent = err.message;
     status.classList.add("warn");
-    return;
   }
-
-  const evt = loadEvent();
-  setRegsForDate(evt.date, []);
-
-  status.textContent = `Cleared registrations for ${evt.date}.`;
-  status.classList.add("ok");
-  render();
 });
 
-$("clearGamesBtn").addEventListener("click", () => {
+$("clearGamesBtn").addEventListener("click", async () => {
   const status = $("adminStatus");
   status.textContent = "";
   status.className = "status";
 
-  if (!isAdmin()) {
-    status.textContent = "Admin mode not enabled.";
+  try {
+    await apiDelete("/api/suggestions", adminHeaders());
+    status.innerHTML = `Išvalyti žaidimai.<span class="suben">Games cleared.</span>`;
+    status.classList.add("ok");
+    await refreshAll();
+  } catch (err) {
+    status.textContent = err.message;
     status.classList.add("warn");
-    return;
   }
-
-  localStorage.removeItem(STORAGE_GAMES);
-  localStorage.removeItem(STORAGE_VOTES);
-
-  status.textContent = "Cleared game suggestions + votes (this device).";
-  status.classList.add("ok");
-  renderGames();
 });
 
-// Re-render if hash changes (admin mode on/off)
-window.addEventListener("hashchange", render);
-
-// Initial render
-render();
+// Boot
+window.addEventListener("hashchange", () => render());
+refreshAll().catch((e) => {
+  console.error(e);
+  alert("Backend error: " + e.message);
+});
 </script>
+
 </body>
 </html>
